@@ -1,61 +1,93 @@
-const client = require('./database.js');
+const pool = require('./database.js');
 const express = require('express');
 const app = express();
 
-// client.connect();
+// pool.connect();
 
 const stringFilter = '\'John Brady\'';
 
-// client.query('SELECT * from brad where name= '.concat(stringFilter),  (err, result) => {
+// pool.query('SELECT * from brad where name= '.concat(stringFilter),  (err, result) => {
 //     if(!err) {
 //         console.log(result.rows);
 //     }
-//     client.end();
+//     pool.end();
 // })
 
 // (async () => {
-//     await client.connect();
-//     const result = await client.query('SELECT * from brad where name= '.concat(stringFilter));
+//     await pool.connect();
+//     const result = await pool.query('SELECT * from brad where name= '.concat(stringFilter));
 //     console.log(result.rows);
-//     client.end();
+//     pool.end();
 // })();
 
 app.use(express.json());
 
 app.get('/', async (req, res) => {
-    return res.json({
-        code: 0,
-        message: 'success',
-        description: 'App running 🚀🚀🚀'
-    })
+    try {
+        await pool.connect();
+        const value = await pool.query('SELECT * from brad where name= '.concat(stringFilter));
+        console.log(value.rows);
+        return res.json(value.rows)
+    } catch (error) {
+        return res.json({code: 1, message: error.message, data: null})
+    }
 })
 
 app.post('/post', async (req, res) => {
     try {
-        console.log(req.body)
 
-        const {username, password} = req.body
+        const {id, name, email, phonenumber, address} = req.body
 
-        const dataResponse = {
-            'username': username,
-            'password': password
+        try {
+            const value = await pool.query('INSERT INTO brad(id, name, email, phonenumber, address)values($1, $2, $3, $4, $5)', [id, name, email, phonenumber, address])
+            console.log(value.rows);
+            const dataResponse = {
+                'id': id,
+                'name': name,
+                'email' : email,
+                'phonenumber' : phonenumber,
+                'address' : address
+            }
+    
+            return res.json({code: 0, message: 'success', data: dataResponse}) 
+            
+        } catch (error) {
+            return res.json({code: 0, message: error.message, data: null})
         }
-
-        return res.json({code: 0, message: 'success', data: dataResponse})
 
     } catch (error) {
         return res.json({code: 1, message: error.message, data: null})
     }
 })
 
-app.post("/add", async(req, res) => {
+app.delete('/delete/:id', async(req, res) => {
+    const {id} = req.params
+    console.log(id)
     try {
-        console.log(req.body);
-    } catch (err) {
-        console.error(err.message);
+        const result = await pool.query('DELETE FROM brad WHERE id = $1', [id]);
+        const dataResponse = {'id': id}
+        return res.json({code: 0, message: 'success', data: dataResponse}) 
+    } catch (error) {
+        return res.json({code: 1, message: error.message, data: null})
     }
-});
+})
 
-app.listen(5000, () => {
-    console.log("Server is listening on port 5000")
+// app.post("/add", async(req, res) => {
+//     try {
+//         console.log(req.body);
+//     } catch (err) {
+//         console.error(err.message);
+//     }
+// });
+
+// app.delete("/delete", async(req,res) => {
+//     try {
+        
+//     } catch (error) {
+        
+//     }
+// })
+
+app.listen(4000, () => {
+    console.log("Server is listening on port 4000")
 });
